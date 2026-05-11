@@ -1,7 +1,8 @@
+
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import PdfUploader from './components/PdfUploader.vue'
 </script>
 
 <template>
-  <HelloWorld />
+  <PdfUploader />
 </template>
