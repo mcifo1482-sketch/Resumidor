@@ -87,6 +87,42 @@ const tools = [
     name: 'PDF a Imagen',
     description: 'Convierte páginas de PDF a imágenes JPG',
     icon: '🖼️'
+  },
+  {
+    id: 'edit',
+    name: 'Editar PDF',
+    description: 'Añade texto, rectángulos y anotaciones',
+    icon: '✏️'
+  },
+  {
+    id: 'protect',
+    name: 'Proteger PDF',
+    description: 'Protege tu PDF con contraseña',
+    icon: '🔒'
+  },
+  {
+    id: 'watermark',
+    name: 'Marca de Agua',
+    description: 'Añade marca de agua a tus PDFs',
+    icon: '💧'
+  },
+  {
+    id: 'crop',
+    name: 'Retallar PDF',
+    description: 'Recorta los márgenes de tus páginas',
+    icon: '📐'
+  },
+  {
+    id: 'imagetopdf',
+    name: 'Imagen a PDF',
+    description: 'Convierte imágenes JPG/PNG a PDF',
+    icon: '📸'
+  },
+  {
+    id: 'pagenumbers',
+    name: 'Números de Página',
+    description: 'Añade números a las páginas de tu PDF',
+    icon: '🔢'
   }
 ]
 </script>

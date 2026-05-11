@@ -153,14 +153,8 @@ const splitPdf = async () => {
     }
 
     const newPdf = await PDFDocument.create()
-    const [copiedPages] = await newPdf.copyPages(pdfDoc, pagesToExtract)
-    pagesToExtract.forEach(() => {
-      if (copiedPages) {
-        newPdf.addPage(copiedPages)
-      }
-    })
 
-    // Método alternativo más confiable
+    // Copiar las páginas seleccionadas al nuevo PDF
     for (const pageIndex of pagesToExtract) {
       const [copiedPage] = await newPdf.copyPages(pdfDoc, [pageIndex])
       newPdf.addPage(copiedPage)
