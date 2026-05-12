@@ -9,8 +9,7 @@
       <div class="upload-area">
         <label for="file-input" class="file-upload">
           <span class="upload-icon">✏️</span>
-          <span class="upload-text">Carga tu PDF para editar</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <span class="upload-text">Carga tu PDF o usa el botón de abajo</span>
         </label>
       </div>
 
@@ -55,7 +54,7 @@
 
           <div class="actions">
             <button @click="applyEdits" :disabled="loading" class="btn-primary">
-              {{ loading ? 'Procesando...' : '💾 Guardar cambios' }}
+              {{ loading ? 'Procesando...' : (fileLoaded ? '💾 Guardar cambios' : '📁 Seleccionar PDF') }}
             </button>
             <button @click="reset" class="btn-secondary">Nuevo PDF</button>
           </div>
@@ -110,8 +109,14 @@ const handleFile = async (event) => {
 }
 
 const applyEdits = async () => {
-  if (!pdfFile.value || !textInput.value) {
-    message.value = { type: 'error', text: 'Por favor carga un PDF y completa los campos' }
+  // Si no hay PDF cargado, abrir el selector
+  if (!pdfFile.value) {
+    document.getElementById('file-input').click()
+    return
+  }
+
+  if (!textInput.value) {
+    message.value = { type: 'error', text: 'Por favor completa los campos' }
     return
   }
 

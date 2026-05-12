@@ -9,9 +9,16 @@
       <div class="upload-area">
         <label for="file-input" class="file-upload">
           <span class="upload-icon">📦</span>
-          <span class="upload-text">Carga tu PDF para comprimir</span>
+          <span class="upload-text">Carga tu PDF para comprimir o usa el botón de abajo</span>
           <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
         </label>
+      </div>
+
+      <div class="actions">
+        <button @click="compressPdf" :disabled="loading" class="btn-primary">
+          {{ loading ? 'Comprimiendo...' : (fileLoaded ? '🗜️ Comprimir PDF' : '📁 Seleccionar PDF') }}
+        </button>
+        <button v-if="fileLoaded" @click="reset" class="btn-secondary">Nuevo PDF</button>
       </div>
 
       <div v-if="fileLoaded" class="processing">
@@ -28,13 +35,6 @@
               <option value="high">Alta (menos comprimido)</option>
             </select>
           </div>
-        </div>
-
-        <div class="actions">
-          <button @click="compressPdf" :disabled="loading" class="btn-primary">
-            {{ loading ? 'Comprimiendo...' : '🗜️ Comprimir PDF' }}
-          </button>
-          <button @click="reset" class="btn-secondary">Nuevo PDF</button>
         </div>
 
         <div v-if="compressedSize" class="result-box">
@@ -94,7 +94,11 @@ const handleFile = async (event) => {
 }
 
 const compressPdf = async () => {
-  if (!fileData.value) return
+  // Si no hay archivo cargado, abrir el selector
+  if (!fileData.value) {
+    document.getElementById('file-input').click()
+    return
+  }
 
   loading.value = true
   message.value = null

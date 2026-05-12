@@ -9,8 +9,7 @@
       <div class="upload-area">
         <label for="file-input" class="file-upload">
           <span class="upload-icon">💧</span>
-          <span class="upload-text">Carga tu PDF</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <span class="upload-text">Carga tu PDF o usa el botón de abajo</span>
         </label>
       </div>
 
@@ -45,7 +44,7 @@
 
           <div class="actions">
             <button @click="applyWatermark" :disabled="loading || !watermarkText" class="btn-primary">
-              {{ loading ? 'Aplicando...' : '💦 Aplicar marca' }}
+              {{ loading ? 'Aplicando...' : (fileLoaded ? '💦 Aplicar marca' : '📁 Seleccionar PDF') }}
             </button>
             <button @click="reset" class="btn-secondary">Nuevo PDF</button>
           </div>

@@ -9,8 +9,7 @@
       <div class="upload-area">
         <label class="file-upload">
           <span class="upload-icon">📸</span>
-          <span class="upload-text">Carga tus imágenes (JPG, PNG)</span>
-          <input type="file" @change="handleFiles" accept=".jpg,.jpeg,.png" multiple />
+          <span class="upload-text">Carga tus imágenes o usa el botón de abajo</span>
         </label>
       </div>
 
@@ -62,7 +61,7 @@
 
         <div class="actions">
           <button @click="convertToPdf" :disabled="loading" class="btn-primary">
-            {{ loading ? 'Convirtiendo...' : '📄 Convertir a PDF' }}
+            {{ loading ? 'Convirtiendo...' : (images.length > 0 ? '📄 Convertir a PDF' : '📁 Seleccionar Imágenes') }}
           </button>
           <button @click="clearImages" class="btn-secondary">Limpiar</button>
         </div>
@@ -120,6 +119,12 @@ const dragEnd = (index) => {
 }
 
 const convertToPdf = async () => {
+  // Si no hay archivo cargado, abrir el selector
+  if (!fileData.value && !pdfFile.value && !files.value?.length) {
+    document.querySelector('input[type="file"]').click()
+    return
+  }
+
   if (images.value.length === 0) {
     message.value = { type: 'error', text: 'Por favor selecciona al menos una imagen' }
     return

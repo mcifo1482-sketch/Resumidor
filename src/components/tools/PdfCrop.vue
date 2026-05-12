@@ -9,8 +9,7 @@
       <div class="upload-area">
         <label for="file-input" class="file-upload">
           <span class="upload-icon">📐</span>
-          <span class="upload-text">Carga tu PDF</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <span class="upload-text">Carga tu PDF o usa el botón de abajo</span>
         </label>
       </div>
 
@@ -64,7 +63,7 @@
 
           <div class="actions">
             <button @click="cropPdf" :disabled="loading" class="btn-primary">
-              {{ loading ? 'Retallando...' : '✂️ Retallar' }}
+              {{ loading ? 'Retallando...' : (fileLoaded ? '✂️ Retallar' : '📁 Seleccionar PDF') }}
             </button>
             <button @click="reset" class="btn-secondary">Nuevo PDF</button>
           </div>
@@ -132,7 +131,11 @@ const handleFile = async (event) => {
 }
 
 const cropPdf = async () => {
-  if (!pdfFile.value) return
+  // Si no hay archivo cargado, abrir el selector
+  if (!pdfFile.value) {
+    document.getElementById('file-input').click()
+    return
+  }
 
   loading.value = true
   message.value = null

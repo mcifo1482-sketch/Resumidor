@@ -9,25 +9,25 @@
       <div class="upload-area">
         <label for="file-input" class="file-upload">
           <span class="upload-icon">📤</span>
-          <span class="upload-text">Arrastra tu PDF aquí o haz clic para seleccionar</span>
+          <span class="upload-text">Arrastra tu PDF aquí o usa el botón de abajo</span>
           <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
         </label>
+      </div>
+
+      <div class="controls">
+        <div v-if="text" class="control-group">
+          <label for="num-sentences">Número de frases en el resumen:</label>
+          <input id="num-sentences" type="number" v-model.number="numSentences" min="1" max="10" />
+        </div>
+        <button @click="summarizeText" :disabled="loading" class="btn-primary">
+          {{ loading ? 'Procesando...' : (text ? 'Generar resumen' : '📁 Seleccionar PDF') }}
+        </button>
       </div>
 
       <div v-if="text" class="processing">
         <div class="text-section">
           <h2>Texto extraído</h2>
           <textarea v-model="text" readonly class="text-area"></textarea>
-        </div>
-
-        <div class="controls">
-          <div class="control-group">
-            <label for="num-sentences">Número de frases en el resumen:</label>
-            <input id="num-sentences" type="number" v-model.number="numSentences" min="1" max="10" />
-          </div>
-          <button @click="summarizeText" :disabled="loading" class="btn-primary">
-            {{ loading ? 'Procesando...' : 'Generar resumen' }}
-          </button>
         </div>
 
         <div v-if="summary" class="summary-section">
@@ -90,7 +90,11 @@ const handleFile = async (event) => {
 }
 
 const summarizeText = () => {
-  if (!text.value) return
+  // Si no hay texto extraído, abrir el selector de archivos
+  if (!text.value) {
+    document.getElementById('file-input').click()
+    return
+  }
 
   const sentences = text.value.split(/[.!?]+/).filter(s => s.trim().length > 0)
   const words = text.value.toLowerCase().split(/\W+/).filter(w => w.length > 0)

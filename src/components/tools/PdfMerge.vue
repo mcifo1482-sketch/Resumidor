@@ -9,9 +9,16 @@
       <div class="upload-section">
         <label class="file-upload">
           <span class="upload-icon">➕</span>
-          <span class="upload-text">Añade PDFs aquí</span>
+          <span class="upload-text">Añade PDFs aquí o usa el botón de abajo</span>
           <input type="file" @change="addFile" accept=".pdf" multiple />
         </label>
+      </div>
+
+      <div class="actions">
+        <button @click="mergePdfs" :disabled="loading" class="btn-primary">
+          {{ loading ? 'Uniendo...' : (files.length > 0 ? '🔗 Unir PDFs' : '📁 Seleccionar PDFs') }}
+        </button>
+        <button v-if="files.length > 0" @click="clearFiles" class="btn-secondary">Limpiar</button>
       </div>
 
       <div v-if="files.length > 0" class="files-list">
@@ -30,13 +37,6 @@
             <span class="file-name">{{ file.name }}</span>
             <button @click="removeFile(index)" class="btn-remove">✕</button>
           </div>
-        </div>
-
-        <div class="actions">
-          <button @click="mergePdfs" :disabled="loading" class="btn-primary">
-            {{ loading ? 'Uniendo...' : '🔗 Unir PDFs' }}
-          </button>
-          <button @click="clearFiles" class="btn-secondary">Limpiar</button>
         </div>
       </div>
 
@@ -79,6 +79,12 @@ const dragEnd = (index) => {
 }
 
 const mergePdfs = async () => {
+  // Si no hay archivos seleccionados, abrir el selector
+  if (files.value.length === 0) {
+    document.querySelector('input[type="file"]').click()
+    return
+  }
+
   if (files.value.length < 2) {
     message.value = { type: 'error', text: 'Selecciona al menos 2 PDFs' }
     return

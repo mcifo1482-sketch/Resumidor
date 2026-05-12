@@ -9,8 +9,7 @@
       <div class="upload-area">
         <label for="file-input" class="file-upload">
           <span class="upload-icon">🔒</span>
-          <span class="upload-text">Carga tu PDF para proteger</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <span class="upload-text">Carga tu PDF o usa el botón de abajo</span>
         </label>
       </div>
 
@@ -76,7 +75,7 @@
 
           <div class="actions">
             <button @click="protectPdf" :disabled="loading || (!userPassword && !ownerPassword)" class="btn-primary">
-              {{ loading ? 'Protegiendo...' : '🔐 Proteger PDF' }}
+              {{ loading ? 'Protegiendo...' : (fileLoaded ? '🔐 Proteger PDF' : '📁 Seleccionar PDF') }}
             </button>
             <button @click="reset" class="btn-secondary">Nuevo PDF</button>
           </div>
@@ -128,7 +127,13 @@ const handleFile = (event) => {
 }
 
 const protectPdf = async () => {
-  if (!pdfFile.value || (!userPassword.value && !ownerPassword.value)) {
+  // Si no hay archivo cargado, abrir el selector
+  if (!pdfFile.value) {
+    document.getElementById('file-input').click()
+    return
+  }
+
+  if (!userPassword.value && !ownerPassword.value) {
     message.value = { type: 'error', text: 'Por favor ingresa al menos una contraseña' }
     return
   }

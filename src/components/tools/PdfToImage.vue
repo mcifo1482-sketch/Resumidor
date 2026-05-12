@@ -9,8 +9,7 @@
       <div class="upload-area">
         <label for="file-input" class="file-upload">
           <span class="upload-icon">🖼️</span>
-          <span class="upload-text">Carga tu PDF para convertir</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <span class="upload-text">Carga tu PDF o usa el botón de abajo</span>
         </label>
       </div>
 
@@ -67,7 +66,7 @@
 
         <div class="actions">
           <button @click="convertToImage" :disabled="loading" class="btn-primary">
-            {{ loading ? 'Convirtiendo...' : '✨ Convertir a Imagen' }}
+            {{ loading ? 'Convirtiendo...' : (fileLoaded ? '✨ Convertir a Imagen' : '📁 Seleccionar PDF') }}
           </button>
           <button @click="reset" class="btn-secondary">Nuevo PDF</button>
         </div>
@@ -120,7 +119,11 @@ const handleFile = async (event) => {
 }
 
 const convertToImage = async () => {
-  if (!pdfFile.value) return
+  // Si no hay PDF cargado, abrir el selector
+  if (!pdfFile.value) {
+    document.getElementById('file-input').click()
+    return
+  }
 
   loading.value = true
   message.value = null

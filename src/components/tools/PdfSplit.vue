@@ -9,9 +9,16 @@
       <div class="upload-area">
         <label for="file-input" class="file-upload">
           <span class="upload-icon">✂️</span>
-          <span class="upload-text">Carga tu PDF aquí</span>
+          <span class="upload-text">Carga tu PDF aquí o usa el botón de abajo</span>
           <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
         </label>
+      </div>
+
+      <div class="actions">
+        <button @click="splitPdf" :disabled="loading" class="btn-primary">
+          {{ loading ? 'Procesando...' : (pdfLoaded ? '🔪 Dividir PDF' : '📁 Seleccionar PDF') }}
+        </button>
+        <button v-if="pdfLoaded" @click="reset" class="btn-secondary">Nuevo PDF</button>
       </div>
 
       <div v-if="pdfLoaded" class="processing">
@@ -52,13 +59,6 @@
               </label>
             </div>
           </div>
-        </div>
-
-        <div class="actions">
-          <button @click="splitPdf" :disabled="loading" class="btn-primary">
-            {{ loading ? 'Procesando...' : '🔪 Dividir PDF' }}
-          </button>
-          <button @click="reset" class="btn-secondary">Nuevo PDF</button>
         </div>
       </div>
 
@@ -108,7 +108,11 @@ const handleFile = async (event) => {
 }
 
 const splitPdf = async () => {
-  if (!pdfFile.value) return
+  // Si no hay PDF cargado, abrir el selector
+  if (!pdfFile.value) {
+    document.getElementById('file-input').click()
+    return
+  }
 
   loading.value = true
   message.value = null
