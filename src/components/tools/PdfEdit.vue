@@ -7,9 +7,10 @@
 
     <div class="tool-content">
       <div class="upload-area">
-        <label for="file-input" class="file-upload">
+        <label for="file-input" class="file-upload" @dragover.prevent @drop.prevent="handleDrop">
           <span class="upload-icon">✏️</span>
           <span class="upload-text">Carga tu PDF o usa el botón de abajo</span>
+          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
         </label>
       </div>
 

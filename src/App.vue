@@ -47,7 +47,7 @@ const tools = {
       </div>
     </nav>
 
-    <component :is="tools[currentTool]" :onSelectTool="(tool) => currentTool = tool" />
+    <component :is="tools[currentTool]" @onSelectTool="currentTool = $event" />
   </div>
 </template>
 
