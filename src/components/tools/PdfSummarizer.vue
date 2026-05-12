@@ -170,6 +170,7 @@ const reset = () => {
 }
 
 .file-upload {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -179,6 +180,7 @@ const reset = () => {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s;
+  position: relative;
 }
 
 .file-upload:hover {
@@ -187,7 +189,11 @@ const reset = () => {
 }
 
 .file-upload input {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
 }
 
 .upload-icon {

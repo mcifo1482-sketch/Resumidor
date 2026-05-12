@@ -236,6 +236,7 @@ const downloadPdf = (pdfBytes, filename) => {
 }
 
 .file-upload {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -253,7 +254,11 @@ const downloadPdf = (pdfBytes, filename) => {
 }
 
 .file-upload input {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
 }
 
 .upload-icon {

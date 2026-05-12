@@ -156,6 +156,7 @@ const mergePdfs = async () => {
 }
 
 .file-upload {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -165,6 +166,7 @@ const mergePdfs = async () => {
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s;
+  position: relative;
 }
 
 .file-upload:hover {
@@ -173,7 +175,11 @@ const mergePdfs = async () => {
 }
 
 .file-upload input {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
 }
 
 .upload-icon {

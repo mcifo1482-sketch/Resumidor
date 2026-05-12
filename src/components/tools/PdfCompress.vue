@@ -195,6 +195,7 @@ const reset = () => {
 }
 
 .file-upload {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -212,7 +213,11 @@ const reset = () => {
 }
 
 .file-upload input {
-  display: none;
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
 }
 
 .upload-icon {
