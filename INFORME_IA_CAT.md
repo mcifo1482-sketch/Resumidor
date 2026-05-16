@@ -1,5 +1,3 @@
-# Informe del projecte en Català
-
 ## 1. Descripció del projecte
 Aquest projecte és una aplicació web que reuneix una col·lecció d’eines per treballar amb fitxers PDF de manera senzilla i ràpida. L’usuari pot fer operacions com unir documents, dividir-los, comprimir, rotar pàgines, afegir numeració, afegir marques d’aigua, convertir imatges i resumir textos dins del navegador.
 
