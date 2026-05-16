@@ -71,9 +71,9 @@
 <script setup>
 import * as pdfjsLib from 'pdfjs-dist'
 import { ref } from 'vue'
+import { pdfWorkerSrc } from '../../utils/pdfWorker.js'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js'
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
 
 const pdfFile = ref(null)
 const pdfLoaded = ref(false)
@@ -118,7 +118,7 @@ const splitPdf = async () => {
   message.value = null
 
   try {
-    const { PDFDocument } = await import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1')
+    const { PDFDocument } = await import('pdf-lib')
     
     const arrayBuffer = await pdfFile.value.arrayBuffer()
     const pdfDoc = await PDFDocument.load(arrayBuffer)

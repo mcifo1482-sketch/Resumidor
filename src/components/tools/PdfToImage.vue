@@ -10,7 +10,7 @@
         <label for="file-input" class="file-upload" @dragover.prevent @drop.prevent="handleDrop">
           <span class="upload-icon">🖼️</span>
           <span class="upload-text">Carga tu PDF o usa el botón de abajo</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <input id="file-input" ref="fileInput" type="file" @change="handleFile" accept=".pdf" />
         </label>
       </div>
 
@@ -80,12 +80,13 @@
 </template>
 
 <script setup>
-import * as pdfjsLib from 'pdfjs-dist'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
 import { ref } from 'vue'
+import { pdfWorkerSrc } from '../../utils/pdfWorker.js'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js'
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
 
+const fileInput = ref(null)
 const pdfFile = ref(null)
 const fileLoaded = ref(false)
 const totalPages = ref(0)
@@ -119,11 +120,32 @@ const handleFile = async (event) => {
   }
 }
 
+const handleDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (!file) return
+  const syntheticEvent = { target: { files: [file] } }
+  handleFile(syntheticEvent)
+}
+
+const openFileDialog = () => {
+  fileInput.value?.click()
+}
+
 const convertToImage = async () => {
-  // Si no hay PDF cargado, abrir el selector
   if (!pdfFile.value) {
-    document.getElementById('file-input').click()
+    openFileDialog()
     return
+  }
+
+  if (selectionMode.value === 'range') {
+    if (
+      rangeStart.value < 1 ||
+      rangeEnd.value > totalPages.value ||
+      rangeStart.value > rangeEnd.value
+    ) {
+      message.value = { type: 'error', text: 'El rango de páginas no es válido.' }
+      return
+    }
   }
 
   loading.value = true
@@ -143,7 +165,6 @@ const convertToImage = async () => {
       pagesToConvert = Array.from({ length: end - start + 1 }, (_, i) => start + i)
     }
 
-    // Determinar escala del canvas
     const canvasScale = scale.value
     let downloadCount = 0
 
@@ -153,8 +174,8 @@ const convertToImage = async () => {
 
       const canvas = document.createElement('canvas')
       const context = canvas.getContext('2d')
-      canvas.height = viewport.height
-      canvas.width = viewport.width
+      canvas.height = Math.floor(viewport.height)
+      canvas.width = Math.floor(viewport.width)
 
       const renderContext = {
         canvasContext: context,
@@ -163,33 +184,35 @@ const convertToImage = async () => {
 
       await page.render(renderContext).promise
 
-      // Convertir a JPEG
-      canvas.toBlob(
-        (blob) => {
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `pagina_${pageNum}.jpg`
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          URL.revokeObjectURL(url)
-          downloadCount++
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob)
+            else reject(new Error('No se pudo generar la imagen'))
+          },
+          'image/jpeg',
+          imageQuality.value === 'low' ? 0.6 : imageQuality.value === 'medium' ? 0.8 : 0.95
+        )
+      })
 
-          if (downloadCount === pagesToConvert.length) {
-            message.value = {
-              type: 'success',
-              text: `✓ ${downloadCount} imagen(es) convertida(s) y descargada(s)`
-            }
-            loading.value = false
-          }
-        },
-        'image/jpeg',
-        imageQuality.value === 'low' ? 0.6 : imageQuality.value === 'medium' ? 0.8 : 0.95
-      )
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `pagina_${pageNum}.jpg`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      downloadCount++
+    }
+
+    message.value = {
+      type: 'success',
+      text: `✓ ${downloadCount} imagen(es) convertida(s) y descargada(s)`
     }
   } catch (error) {
     message.value = { type: 'error', text: 'Error al convertir: ' + error.message }
+  } finally {
     loading.value = false
   }
 }
@@ -204,7 +227,7 @@ const reset = () => {
   rangeEnd.value = 1
   imageQuality.value = 'high'
   scale.value = 2
-  document.getElementById('file-input').value = ''
+  if (fileInput.value) fileInput.value.value = ''
 }
 </script>
 

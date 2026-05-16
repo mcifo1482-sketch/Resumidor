@@ -10,7 +10,7 @@
         <label for="file-input" class="file-upload">
           <span class="upload-icon">📦</span>
           <span class="upload-text">Carga tu PDF para comprimir o usa el botón de abajo</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <input id="file-input" ref="fileInput" type="file" @change="handleFile" accept=".pdf" />
         </label>
       </div>
 
@@ -60,7 +60,12 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
+import { pdfWorkerSrc } from '../../utils/pdfWorker.js'
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
+
+const fileInput = ref(null)
 const fileData = ref(null)
 const fileLoaded = ref(false)
 const originalSize = ref(0)
@@ -70,7 +75,7 @@ const message = ref(null)
 const quality = ref('medium')
 
 const compressionPercent = computed(() => {
-  if (!compressedSize.value) return 0
+  if (!compressedSize.value || !originalSize.value) return 0
   return Math.round(((originalSize.value - compressedSize.value) / originalSize.value) * 100)
 })
 
@@ -83,7 +88,7 @@ const formatFileSize = (bytes) => {
 }
 
 const handleFile = async (event) => {
-  const file = event.target.files[0]
+  const file = event.target.files?.[0]
   if (!file) return
 
   fileData.value = file
@@ -93,10 +98,25 @@ const handleFile = async (event) => {
   message.value = null
 }
 
+const openFileDialog = () => {
+  fileInput.value?.click()
+}
+
+const downloadPdf = (pdfBytes, filename) => {
+  const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 const compressPdf = async () => {
-  // Si no hay archivo cargado, abrir el selector
   if (!fileData.value) {
-    document.getElementById('file-input').click()
+    openFileDialog()
     return
   }
 
@@ -104,48 +124,64 @@ const compressPdf = async () => {
   message.value = null
 
   try {
-    const { PDFDocument } = await import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1')
-    
+    const { PDFDocument } = await import('pdf-lib')
     const arrayBuffer = await fileData.value.arrayBuffer()
-    const pdfDoc = await PDFDocument.load(arrayBuffer)
+    const typedArray = new Uint8Array(arrayBuffer)
+    const pdf = await pdfjsLib.getDocument(typedArray).promise
+    const outputPdf = await PDFDocument.create()
 
-    // Obtener páginas
-    const pages = pdfDoc.getPages()
-
-    // Configurar compresión según calidad
-    const compressionConfig = {
-      low: { quality: 0.3, scale: 0.5 },
-      medium: { quality: 0.6, scale: 0.75 },
-      high: { quality: 0.85, scale: 0.9 }
+    const qualitySettings = {
+      low: { scale: 1, jpegQuality: 0.6 },
+      medium: { scale: 1.5, jpegQuality: 0.8 },
+      high: { scale: 2, jpegQuality: 0.95 }
     }
 
-    const config = compressionConfig[quality.value]
+    const { scale, jpegQuality } = qualitySettings[quality.value] || qualitySettings.medium
 
-    // En pdf-lib, la compresión se hace optimizando el documento
-    const pdfBytes = await pdfDoc.save({ useObjectStreams: true })
-    
-    // Simular compresión ajustando tamaño
-    let compressedBytes = pdfBytes
-    if (quality.value === 'low') {
-      compressedBytes = pdfBytes.slice(0, Math.ceil(pdfBytes.length * 0.4))
-    } else if (quality.value === 'medium') {
-      compressedBytes = pdfBytes.slice(0, Math.ceil(pdfBytes.length * 0.6))
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum)
+      const viewport = page.getViewport({ scale })
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+      canvas.width = Math.floor(viewport.width)
+      canvas.height = Math.floor(viewport.height)
+
+      const renderContext = {
+        canvasContext: context,
+        viewport
+      }
+
+      await page.render(renderContext).promise
+
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob)
+            else reject(new Error('No se pudo generar la imagen'))
+          },
+          'image/jpeg',
+          jpegQuality
+        )
+      })
+
+      const imageBytes = await blob.arrayBuffer()
+      const jpgImage = await outputPdf.embedJpg(imageBytes)
+      const outputPage = outputPdf.addPage([canvas.width, canvas.height])
+      outputPage.drawImage(jpgImage, {
+        x: 0,
+        y: 0,
+        width: canvas.width,
+        height: canvas.height
+      })
     }
 
+    const compressedBytes = await outputPdf.save({ useObjectStreams: true, useCompression: true })
     compressedSize.value = compressedBytes.length
-
-    // Descargar PDF comprimido
-    const blob = new Blob([compressedBytes], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'comprimido.pdf'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
-    message.value = { type: 'success', text: '✓ PDF comprimido y descargado' }
+    downloadPdf(compressedBytes, 'comprimido.pdf')
+    message.value = {
+      type: 'success',
+      text: `✓ PDF comprimido y descargado (${formatFileSize(compressedSize.value)})`
+    }
   } catch (error) {
     message.value = { type: 'error', text: 'Error al comprimir: ' + error.message }
   } finally {
@@ -160,7 +196,7 @@ const reset = () => {
   compressedSize.value = 0
   quality.value = 'medium'
   message.value = null
-  document.getElementById('file-input').value = ''
+  if (fileInput.value) fileInput.value.value = ''
 }
 </script>
 

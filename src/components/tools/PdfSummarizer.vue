@@ -7,10 +7,10 @@
 
     <div class="tool-content">
       <div class="upload-area">
-        <label for="file-input" class="file-upload">
+        <label for="file-input" class="file-upload" @dragover.prevent @drop.prevent="handleDrop">
           <span class="upload-icon">📤</span>
           <span class="upload-text">Arrastra tu PDF aquí o usa el botón de abajo</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <input id="file-input" ref="fileInput" type="file" @change="handleFile" accept=".pdf" />
         </label>
       </div>
 
@@ -20,9 +20,11 @@
           <input id="num-sentences" type="number" v-model.number="numSentences" min="1" max="10" />
         </div>
         <button @click="summarizeText" :disabled="loading" class="btn-primary">
-          {{ loading ? 'Procesando...' : (text ? 'Generar resumen' : '📁 Seleccionar PDF') }}
+          {{ loading ? 'Procesando...' : (fileLoaded ? 'Generar resumen' : '📁 Seleccionar PDF') }}
         </button>
       </div>
+
+      <div v-if="message" :class="['message', message.type]">{{ message.text }}</div>
 
       <div v-if="text" class="processing">
         <div class="text-section">
@@ -48,24 +50,38 @@
 <script setup>
 import * as pdfjsLib from 'pdfjs-dist'
 import { ref } from 'vue'
+import { pdfWorkerSrc } from '../../utils/pdfWorker.js'
 
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
+
+const fileInput = ref(null)
 const text = ref('')
 const summary = ref('')
 const loading = ref(false)
+const fileLoaded = ref(false)
+const message = ref(null)
 const numSentences = ref(5)
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js'
+const stopWords = new Set([
+  'de', 'la', 'que', 'el', 'en', 'y', 'a', 'los', 'se', 'del', 'las', 'por', 'un', 'para',
+  'con', 'no', 'una', 'su', 'al', 'es', 'lo', 'como', 'más', 'pero', 'sus', 'le', 'ya', 'o',
+  'este', 'sí', 'porque', 'esta', 'entre', 'cuando', 'muy', 'sin', 'sobre', 'también', 'me',
+  'hasta', 'hay', 'donde', 'quien', 'desde', 'todo', 'nos', 'durante', 'todos', 'uno', 'les',
+  'ni', 'contra', 'otros', 'ese', 'eso', 'ante', 'ellos', 'e', 'esto', 'mí', 'antes', 'algunos',
+  'qué', 'unos', 'yo', 'otro', 'otras', 'otra', 'él', 'tanto', 'esa', 'estos', 'mucho', 'quienes',
+  'nada', 'muchos', 'cual', 'poco', 'ella', 'estar', 'estas', 'algunas', 'algo', 'nosotros', 'mi'
+])
 
-const handleFile = async (event) => {
-  const file = event.target.files[0]
+const processPdfFile = async (file) => {
   if (!file) return
 
   loading.value = true
   text.value = ''
   summary.value = ''
+  message.value = null
 
   const reader = new FileReader()
+
   reader.onload = async function () {
     try {
       const typedArray = new Uint8Array(this.result)
@@ -79,43 +95,80 @@ const handleFile = async (event) => {
         fullText += strings.join(' ') + '\n'
       }
 
-      text.value = fullText
+      text.value = fullText.trim()
+      fileLoaded.value = true
+      if (!text.value) {
+        message.value = { type: 'error', text: 'No se encontró texto legible en el PDF.' }
+      } else {
+        message.value = { type: 'success', text: 'Texto extraído correctamente. Pulsa Generar resumen.' }
+      }
     } catch (error) {
-      alert('Error al procesar el PDF: ' + error.message)
+      message.value = { type: 'error', text: 'Error al procesar el PDF: ' + error.message }
     } finally {
       loading.value = false
     }
   }
+
   reader.readAsArrayBuffer(file)
 }
 
+const handleFile = async (event) => {
+  const file = event.target.files ? event.target.files[0] : null
+  if (!file) return
+  await processPdfFile(file)
+}
+
+const handleDrop = async (event) => {
+  const file = event.dataTransfer?.files?.[0]
+  if (!file) return
+  await processPdfFile(file)
+}
+
+const openFileDialog = () => {
+  fileInput.value?.click()
+}
+
 const summarizeText = () => {
-  // Si no hay texto extraído, abrir el selector de archivos
-  if (!text.value) {
-    document.getElementById('file-input').click()
+  if (!text.value.trim()) {
+    openFileDialog()
     return
   }
 
-  const sentences = text.value.split(/[.!?]+/).filter(s => s.trim().length > 0)
-  const words = text.value.toLowerCase().split(/\W+/).filter(w => w.length > 0)
+  const sentences = text.value
+    .split(/[.!?]+/)
+    .map(sentence => sentence.trim())
+    .filter(sentence => sentence.length > 0)
+
+  const words = text.value
+    .toLowerCase()
+    .split(/\W+/)
+    .filter(word => word.length > 0 && !stopWords.has(word))
 
   const wordFreq = {}
   words.forEach(word => {
     wordFreq[word] = (wordFreq[word] || 0) + 1
   })
 
-  const sentenceScores = sentences.map(sentence => {
-    const sentenceWords = sentence.toLowerCase().split(/\W+/).filter(w => w.length > 0)
+  const sentenceScores = sentences.map((sentence, index) => {
+    const sentenceWords = sentence
+      .toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length > 0 && !stopWords.has(word))
+
     let score = 0
     sentenceWords.forEach(word => {
       score += wordFreq[word] || 0
     })
-    return { sentence: sentence.trim(), score }
+
+    return { sentence, score, index }
   })
 
   sentenceScores.sort((a, b) => b.score - a.score)
-  const topSentences = sentenceScores.slice(0, numSentences.value).map(s => s.sentence)
-  summary.value = topSentences.join('. ') + '.'
+  const topSentences = sentenceScores.slice(0, numSentences.value)
+  topSentences.sort((a, b) => a.index - b.index)
+
+  summary.value = topSentences.map(item => item.sentence).join('. ') + '.'
+  message.value = { type: 'success', text: `Resumen generado con ${topSentences.length} frase(s).` }
 }
 
 const downloadSummary = () => {
@@ -134,8 +187,12 @@ const downloadSummary = () => {
 const reset = () => {
   text.value = ''
   summary.value = ''
+  fileLoaded.value = false
   numSentences.value = 5
-  document.getElementById('file-input').value = ''
+  message.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
 }
 </script>
 
@@ -321,6 +378,25 @@ const reset = () => {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.message {
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.message.success {
+  background: #e6ffed;
+  color: #1f7a40;
+  border: 1px solid #a4e6b1;
+}
+
+.message.error {
+  background: #ffe6e6;
+  color: #a12f29;
+  border: 1px solid #f1a1a1;
 }
 
 .loading-message {

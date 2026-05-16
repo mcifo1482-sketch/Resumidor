@@ -86,6 +86,13 @@ const handleFile = async (event) => {
   message.value = null
 }
 
+const handleDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (!file) return
+  const syntheticEvent = { target: { files: [file] } }
+  handleFile(syntheticEvent)
+}
+
 const applyWatermark = async () => {
   if (!pdfFile.value || !watermarkText.value) {
     message.value = { type: 'error', text: 'Por favor completa todos los campos' }

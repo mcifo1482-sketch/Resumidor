@@ -10,7 +10,7 @@
         <label for="file-input" class="file-upload" @dragover.prevent @drop.prevent="handleDrop">
           <span class="upload-icon">📐</span>
           <span class="upload-text">Carga tu PDF o usa el botón de abajo</span>
-          <input id="file-input" type="file" @change="handleFile" accept=".pdf" />
+          <input id="file-input" ref="fileInput" type="file" @change="handleFile" accept=".pdf" />
         </label>
       </div>
 
@@ -88,12 +88,13 @@
 </template>
 
 <script setup>
-import * as pdfjsLib from 'pdfjs-dist'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
 import { ref, computed } from 'vue'
+import { pdfWorkerSrc } from '../../utils/pdfWorker.js'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js'
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
 
+const fileInput = ref(null)
 const pdfFile = ref(null)
 const fileLoaded = ref(false)
 const totalPages = ref(0)
@@ -131,10 +132,25 @@ const handleFile = async (event) => {
   }
 }
 
+const handleDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (!file) return
+  const syntheticEvent = { target: { files: [file] } }
+  handleFile(syntheticEvent)
+}
+
 const cropPdf = async () => {
   // Si no hay archivo cargado, abrir el selector
   if (!pdfFile.value) {
-    document.getElementById('file-input').click()
+    fileInput.value?.click()
+    return
+  }
+
+  if (
+    margins.value.left + margins.value.right >= 1000 ||
+    margins.value.top + margins.value.bottom >= 1000
+  ) {
+    message.value = { type: 'error', text: 'Márgenes demasiado grandes' }
     return
   }
 
@@ -143,33 +159,69 @@ const cropPdf = async () => {
 
   try {
     const { PDFDocument } = await import('pdf-lib')
-    
-    const arrayBuffer = await pdfFile.value.arrayBuffer()
-    const pdfDoc = await PDFDocument.load(arrayBuffer)
-    const pages = pdfDoc.getPages()
 
-    if (cropMode.value === 'all') {
-      pages.forEach(page => {
-        const { width, height } = page.getSize()
-        page.setCropBox(
-          margins.value.left,
-          margins.value.bottom,
-          width - margins.value.right,
-          height - margins.value.top
-        )
-      })
-    } else {
-      const page = pages[selectedPage.value - 1]
-      const { width, height } = page.getSize()
-      page.setCropBox(
-        margins.value.left,
-        margins.value.bottom,
-        width - margins.value.right,
-        height - margins.value.top
-      )
+    const arrayBuffer = await pdfFile.value.arrayBuffer()
+    const existingPdf = await PDFDocument.load(arrayBuffer)
+    const total = existingPdf.getPageCount()
+    const pageIndex = selectedPage.value - 1
+
+    const validateSelectedPage = () => {
+      if (pageIndex < 0 || pageIndex >= total) {
+        message.value = { type: 'error', text: 'Selecciona una página válida para recortar.' }
+        return false
+      }
+      return true
     }
 
-    const pdfBytes = await pdfDoc.save()
+    const getCropSize = (page) => {
+      const { width, height } = page.getSize()
+      return {
+        width,
+        height,
+        cropWidth: Math.max(1, width - margins.value.left - margins.value.right),
+        cropHeight: Math.max(1, height - margins.value.top - margins.value.bottom)
+      }
+    }
+
+    const newPdf = await PDFDocument.create()
+    const pages = existingPdf.getPages()
+
+    if (cropMode.value === 'specific') {
+      if (!validateSelectedPage()) return
+
+      const copiedPages = await newPdf.copyPages(existingPdf, pages.map((_, index) => index))
+      copiedPages.forEach((page) => newPdf.addPage(page))
+
+      const originalPage = pages[pageIndex]
+      const { width, height, cropWidth, cropHeight } = getCropSize(originalPage)
+      const [embeddedPage] = await newPdf.embedPages([originalPage])
+      const croppedPage = newPdf.addPage([cropWidth, cropHeight])
+
+      croppedPage.drawPage(embeddedPage, {
+        x: -margins.value.left,
+        y: -margins.value.bottom,
+        width,
+        height
+      })
+
+      newPdf.removePage(pageIndex)
+      newPdf.insertPage(pageIndex, croppedPage)
+    } else {
+      for (const page of pages) {
+        const { width, height, cropWidth, cropHeight } = getCropSize(page)
+        const [embeddedPage] = await newPdf.embedPages([page])
+        const croppedPage = newPdf.addPage([cropWidth, cropHeight])
+
+        croppedPage.drawPage(embeddedPage, {
+          x: -margins.value.left,
+          y: -margins.value.bottom,
+          width,
+          height
+        })
+      }
+    }
+
+    const pdfBytes = await newPdf.save()
     downloadPdf(pdfBytes, 'retallado.pdf')
     message.value = { type: 'success', text: '✓ PDF retallado y descargado' }
   } catch (error) {
@@ -203,7 +255,7 @@ const reset = () => {
   cropMode.value = 'all'
   selectedPage.value = 1
   resetMargins()
-  document.getElementById('file-input').value = ''
+  if (fileInput.value) fileInput.value.value = ''
 }
 </script>
 

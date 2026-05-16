@@ -90,9 +90,10 @@
 <script setup>
 import * as pdfjsLib from 'pdfjs-dist'
 import { ref } from 'vue'
+import { pdfWorkerSrc } from '../../utils/pdfWorker.js'
+import { rgb } from 'pdf-lib'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js'
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc
 
 const pdfFile = ref(null)
 const fileLoaded = ref(false)
@@ -124,6 +125,13 @@ const handleFile = async (event) => {
   } finally {
     loading.value = false
   }
+}
+
+const handleDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (!file) return
+  const syntheticEvent = { target: { files: [file] } }
+  handleFile(syntheticEvent)
 }
 
 const formatNumber = (num) => {
@@ -200,7 +208,7 @@ const addPageNumbers = async () => {
         x,
         y,
         size: fontSize.value,
-        color: { r: 0, g: 0, b: 0 }
+        color: rgb(0, 0, 0)
       })
     })
 

@@ -9,7 +9,6 @@ import PdfToImage from './components/tools/PdfToImage.vue'
 import PdfRotate from './components/tools/PdfRotate.vue'
 import PdfSummarizer from './components/tools/PdfSummarizer.vue'
 import PdfEdit from './components/tools/PdfEdit.vue'
-import PdfProtect from './components/tools/PdfProtect.vue'
 import PdfWatermark from './components/tools/PdfWatermark.vue'
 import PdfCrop from './components/tools/PdfCrop.vue'
 import ImageToPdf from './components/tools/ImageToPdf.vue'
@@ -25,7 +24,6 @@ const tools = {
   rotate: PdfRotate,
   summarize: PdfSummarizer,
   edit: PdfEdit,
-  protect: PdfProtect,
   watermark: PdfWatermark,
   crop: PdfCrop,
   imagetopdf: ImageToPdf,

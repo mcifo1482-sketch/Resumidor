@@ -7,9 +7,10 @@
 
     <div class="tool-content">
       <div class="upload-area">
-        <label class="file-upload">
+        <label class="file-upload" @dragover.prevent @drop.prevent="handleDrop">
           <span class="upload-icon">📸</span>
           <span class="upload-text">Carga tus imágenes o usa el botón de abajo</span>
+          <input type="file" multiple @change="handleFiles" accept="image/*" />
         </label>
       </div>
 
@@ -87,6 +88,7 @@ const fitToPage = ref(true)
 const handleFiles = (event) => {
   const newFiles = Array.from(event.target.files)
   newFiles.forEach(file => {
+    if (!file.type.startsWith('image/')) return
     const reader = new FileReader()
     reader.onload = (e) => {
       images.value.push({
@@ -98,6 +100,21 @@ const handleFiles = (event) => {
     reader.readAsDataURL(file)
   })
   event.target.value = ''
+}
+
+const handleDrop = (event) => {
+  const filesDropped = Array.from(event.dataTransfer.files).filter(file => file.type.startsWith('image/'))
+  filesDropped.forEach(file => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      images.value.push({
+        name: file.name,
+        preview: e.target.result,
+        file: file
+      })
+    }
+    reader.readAsDataURL(file)
+  })
 }
 
 const removeImage = (index) => {
@@ -119,8 +136,7 @@ const dragEnd = (index) => {
 }
 
 const convertToPdf = async () => {
-  // Si no hay archivo cargado, abrir el selector
-  if (!fileData.value && !pdfFile.value && !files.value?.length) {
+  if (images.value.length === 0) {
     document.querySelector('input[type="file"]').click()
     return
   }

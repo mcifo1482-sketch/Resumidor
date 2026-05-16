@@ -14,7 +14,7 @@ Una plataforma web completa similar a iLovePDF con 12 herramientas poderosas par
 - **✏️ Editar PDF**: Añade texto, rectángulos y resaltados
 - **🔒 Proteger PDF**: Aplica protección con contraseña
 - **💧 Marca de Agua**: Añade marcas de agua diagonales
-- **✂️ Recortar PDF**: Ajusta márgenes de las páginas
+- **✂️ Recortar PDF**: Corta las partes del documento recortando márgenes y produciendo un PDF recortado real
 - **🖼️ Imagen a PDF**: Convierte imágenes a documentos PDF
 - **🔢 Numerar Páginas**: Añade números de página automáticos
 

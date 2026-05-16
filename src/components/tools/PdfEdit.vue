@@ -109,6 +109,13 @@ const handleFile = async (event) => {
   }
 }
 
+const handleDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (!file) return
+  const syntheticEvent = { target: { files: [file] } }
+  handleFile(syntheticEvent)
+}
+
 const applyEdits = async () => {
   // Si no hay PDF cargado, abrir el selector
   if (!pdfFile.value) {
@@ -116,7 +123,7 @@ const applyEdits = async () => {
     return
   }
 
-  if (!textInput.value) {
+  if (selectedTool.value === 'text' && !textInput.value) {
     message.value = { type: 'error', text: 'Por favor completa los campos' }
     return
   }

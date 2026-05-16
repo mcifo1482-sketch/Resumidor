@@ -94,8 +94,7 @@ const mergePdfs = async () => {
   message.value = null
 
   try {
-    // Simular la carga de pdfjsLib para fusionar
-    const { PDFDocument } = await import('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1')
+    const { PDFDocument } = await import('pdf-lib')
     
     const mergedPdf = await PDFDocument.create()
 

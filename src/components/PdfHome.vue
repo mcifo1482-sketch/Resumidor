@@ -95,12 +95,6 @@ const tools = [
     icon: '✏️'
   },
   {
-    id: 'protect',
-    name: 'Proteger PDF',
-    description: 'Protege tu PDF con contraseña',
-    icon: '🔒'
-  },
-  {
     id: 'watermark',
     name: 'Marca de Agua',
     description: 'Añade marca de agua a tus PDFs',
